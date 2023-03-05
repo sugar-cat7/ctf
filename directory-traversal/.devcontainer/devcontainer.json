@@ -1,0 +1,10 @@
+{
+  "dockerComposeFile": ["../dirtrav-app/docker-compose.yml"],
+  "service": "app",
+  "workspaceFolder": "/opt/app",
+  "customizations": {
+    "vscode": {
+      "extensions": ["ms-python.python"]
+    }
+  }
+}
