@@ -1,0 +1,2 @@
+useradd test
+su test

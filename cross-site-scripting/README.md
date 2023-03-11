@@ -65,3 +65,21 @@ http://localhost:5002/?name=taro
         - (2.0 以降)`DomSanitizer.bypassSecurityTrustHtml`関数
 
 ### CSP: Content Security Policy
+
+- CSP は XSS をはじめとする Content Injection 攻撃に対するリスクを軽減されるセキュリティレイヤー
+
+  - 開発者は CSP を用いることで、特定の Web ページにおいて読み込みや実行などの処理を許可するコンテンツを明示的に指定できる
+  - XSS が発生するそもそもの原因は、スクリプトを解釈して実行するブラウザが「どのスクリプトが正当な開発者にとって実行が意図されたもので、反対にどのスクリプトが攻撃者によって挿入されたものなのか」を判別できない点にあると言える
+
+- CSP の仕様
+  - CSP の配信
+    - [HTTP レスポンスの Content Security Policy](https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Content-Security-Policy)
+    - HTML ヘッダー内の meta 要素
+  - ディレクティブ
+    - CSP による制限を定義するための命令記法
+    - `<directive-name> <directive-value>`のタプルで構成される
+    - `script-src 'self' 'unsafe-inline' ....`
+      - `Fetch Directives`: リソースの読み込みや実行に関する制限をかけたディレクティブ
+      - `Document Directives`: ドキュメントやワーカーの状態に関するディレクティブ
+      - `Navigation Directives`: ナビゲーションコンテキストに関する制限を提供するディレクトリ
+      - `Reporting Directives`: 何らかの制限に違反した際にレポートを行う機能を提供するディレクティブ
