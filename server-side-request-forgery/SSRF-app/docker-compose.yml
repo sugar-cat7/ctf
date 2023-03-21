@@ -1,0 +1,22 @@
+version: "3.7"
+
+services:
+  app:
+    build: ./app
+    restart: always
+    networks:
+      - app
+    ports:
+      - 5001:5000
+    volumes:
+      - ./app/app:/opt/app
+    environment:
+      - FLAG="flag{This_is_a_simple_SSRF}"
+
+  redis:
+    image: "redis:6.2"
+    networks:
+      - app
+
+networks:
+  app:
