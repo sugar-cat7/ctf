@@ -32,7 +32,7 @@ B -- コンテンツ表示 --> A
 
 - API flow
 
-```
+```mermaid
 sequenceDiagram
   User->>+Application: GET /
   Application->>-User: Render URL input page
