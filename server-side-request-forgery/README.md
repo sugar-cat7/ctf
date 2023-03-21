@@ -108,6 +108,62 @@ H --> A
 G --> A
 ```
 
+- URL のホワイトリスト化
+
+```python
+# Python example
+import requests
+
+def fetch_url(url):
+    allowed_urls = ['https://example.com', 'https://another-example.com']
+
+    if url not in allowed_urls:
+        raise ValueError('URL not allowed')
+
+    response = requests.get(url)
+    return response.content
+
+```
+
+- ユーザーからの入力に対する適切な検証
+
+```python
+# Python example
+import re
+import requests
+
+def fetch_url(url):
+    if not re.match('^https?://(?:[a-z0-9.-]+\\.){1,}[a-z]{2,6}', url):
+        raise ValueError('Invalid URL format')
+
+    response = requests.get(url)
+    return response.content
+
+```
+
+- プロキシを通じて外部リクエストを制限
+
+```python
+# Python example
+import os
+import requests
+
+def fetch_url(url):
+    proxy = os.environ.get('HTTP_PROXY') or os.environ.get('HTTPS_PROXY')
+
+    if proxy:
+        proxies = {
+            'http': proxy,
+            'https': proxy
+        }
+        response = requests.get(url, proxies=proxies)
+    else:
+        response = requests.get(url)
+
+    return response.content
+
+```
+
 ### 事例紹介
 
 - GitHub Enterprise で SSRF を経由したオブジェクトインジェクションの事例[link](https://blog.orange.tw/2017/07/how-i-chained-4-vulnerabilities-on.html)
